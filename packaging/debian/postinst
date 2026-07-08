@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+if ! getent group broadcast-box >/dev/null; then
+	addgroup --system broadcast-box >/dev/null
+fi
+
+if ! id broadcast-box >/dev/null 2>&1; then
+	adduser \
+		--system \
+		--no-create-home \
+		--ingroup broadcast-box \
+		--home /var/lib/broadcast-box \
+		--shell /usr/sbin/nologin \
+		broadcast-box >/dev/null
+fi
+
+install -d -o broadcast-box -g broadcast-box -m 0750 /var/lib/broadcast-box
+install -d -o broadcast-box -g broadcast-box -m 0750 /var/log/broadcast-box
+install -d -o root -g root -m 0755 /etc/broadcast-box
+
+if command -v systemctl >/dev/null 2>&1; then
+	systemctl daemon-reload || true
+	systemctl enable broadcast-box.service >/dev/null 2>&1 || true
+	systemctl enable --now broadcast-box-nat-refresh.timer >/dev/null 2>&1 || true
+	systemctl start broadcast-box-nat-refresh.service >/dev/null 2>&1 || true
+fi
+
+exit 0
