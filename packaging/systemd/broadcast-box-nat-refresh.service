@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh Broadcast Box NAT IP from Dynamic DNS
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/broadcast-box/update-nat-ip.sh
