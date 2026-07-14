@@ -52,6 +52,9 @@ func (w *WHIPSession) audioWriter(remoteTrack *webrtc.TrackRemote, streamKey str
 			continue
 		}
 
+	    rtpPkt.Extension = false
+		rtpPkt.Extensions = nil
+
 		var sessions map[string]*whep.WHEPSession
 		if sessionsAny := w.WHEPSessionsSnapshot.Load(); sessionsAny != nil {
 			sessions = sessionsAny.(map[string]*whep.WHEPSession)

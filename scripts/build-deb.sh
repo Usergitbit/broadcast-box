@@ -11,16 +11,23 @@ Usage: ./scripts/build-deb.sh <version>
 
 Builds a local Debian package:
   dist/broadcast-box_<version>_amd64.deb
+Then uploads it to the matching GitHub release tag:
+  v<version>
 
 Environment overrides:
   DEB_ARCH      Debian architecture, default: amd64
   GOARCH        Go architecture override. Inferred from DEB_ARCH by default.
   SKIP_TESTS    Set to 1 to skip `go test ./...`.
   SKIP_WEB      Set to 1 to reuse the existing web/build directory.
+  SKIP_RELEASE_UPLOAD
+                Set to 1 to build the package without creating/updating a
+                GitHub release.
+  RELEASE_TAG   GitHub release tag override, default: v<version>.
 
 Examples:
   ./scripts/build-deb.sh 0.1.0
   DEB_ARCH=arm64 ./scripts/build-deb.sh 0.1.0
+  SKIP_RELEASE_UPLOAD=1 ./scripts/build-deb.sh 0.1.0
 EOF
 }
 
@@ -45,6 +52,9 @@ EOF
 			;;
 		dpkg-deb)
 			echo "  dpkg-deb: sudo apt-get update && sudo apt-get install -y dpkg-dev"
+			;;
+		gh)
+			echo "  gh: install GitHub CLI from https://cli.github.com/ and run 'gh auth login'"
 			;;
 		install|realpath)
 			echo "  $1: sudo apt-get update && sudo apt-get install -y coreutils"
@@ -94,6 +104,32 @@ clean_dir() {
 	esac
 }
 
+upload_release_asset() {
+	local release_tag release_title target_commit
+	release_tag="${RELEASE_TAG:-v$version}"
+	release_title="$PACKAGE_NAME $version"
+
+	if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+		fail "release upload must run inside a git repository"
+	fi
+
+	if ! git diff --quiet || ! git diff --cached --quiet; then
+		echo "warning: working tree has uncommitted changes; release tag will point at HEAD" >&2
+	fi
+
+	target_commit="$(git rev-parse HEAD)"
+
+	echo "==> Uploading $output_deb to GitHub release $release_tag"
+	if gh release view "$release_tag" >/dev/null 2>&1; then
+		gh release upload "$release_tag" "$output_deb" --clobber
+	else
+		gh release create "$release_tag" "$output_deb" \
+			--target "$target_commit" \
+			--title "$release_title" \
+			--notes "Release $version"
+	fi
+}
+
 version="${1:-}"
 if [[ -z "$version" || "${version:-}" == "-h" || "${version:-}" == "--help" ]]; then
 	usage
@@ -132,7 +168,11 @@ esac
 pkg_root="$WORK_DIR/${PACKAGE_NAME}_${version}_${deb_arch}"
 output_deb="$DIST_DIR/${PACKAGE_NAME}_${version}_${deb_arch}.deb"
 
-check_prerequisites go npm dpkg-deb install realpath
+required_commands=(go npm dpkg-deb install realpath)
+if [[ "${SKIP_RELEASE_UPLOAD:-0}" != "1" ]]; then
+	required_commands+=(git gh)
+fi
+check_prerequisites "${required_commands[@]}"
 
 cd "$REPO_ROOT"
 
@@ -213,3 +253,7 @@ echo "==> Building Debian package"
 dpkg-deb --root-owner-group --build "$pkg_root" "$output_deb"
 
 echo "==> Built $output_deb"
+
+if [[ "${SKIP_RELEASE_UPLOAD:-0}" != "1" ]]; then
+	upload_release_asset
+fi

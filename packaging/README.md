@@ -10,11 +10,22 @@ From the repository root:
 ./scripts/build-deb.sh 0.1.0
 ```
 
-The package is written to `dist/broadcast-box_0.1.0_amd64.deb`.
+The package is written to `dist/broadcast-box_0.1.0_amd64.deb`, then uploaded
+to the GitHub release tagged `v0.1.0`.
 
-Build prerequisites are `go`, `npm`, and `dpkg-deb`. The script runs
-`npm ci`, `npm run build`, `go test ./...`, and then builds a Linux binary for
-the selected Debian architecture.
+Build prerequisites are `go`, `npm`, `dpkg-deb`, `git`, and the GitHub CLI
+(`gh`). The script runs `npm ci`, `npm run build`, `go test ./...`, builds a
+Linux binary for the selected Debian architecture, and creates or updates the
+matching GitHub release. Authenticate first with `gh auth login`.
+
+To build the package without uploading it, set `SKIP_RELEASE_UPLOAD=1`:
+
+```sh
+SKIP_RELEASE_UPLOAD=1 ./scripts/build-deb.sh 0.1.0
+```
+
+The release tag defaults to `v<version>`. To use a different tag, set
+`RELEASE_TAG`.
 
 ## Installed Layout
 
