@@ -22,6 +22,13 @@ install -d -o root -g root -m 0755 /etc/broadcast-box
 if command -v systemctl >/dev/null 2>&1; then
 	systemctl daemon-reload || true
 	systemctl enable broadcast-box.service >/dev/null 2>&1 || true
+
+	echo
+	echo "NOTE: Automatic NAT IP refresh requires NAT_1_TO_1_HOST to be configured."
+	echo "Set NAT_1_TO_1_HOST in /etc/broadcast-box/broadcast-box.env."
+	echo "If NAT_1_TO_1_HOST is not configured, the refresh timer will do nothing."
+	echo
+
 	systemctl enable --now broadcast-box-nat-refresh.timer >/dev/null 2>&1 || true
 	systemctl start broadcast-box-nat-refresh.service >/dev/null 2>&1 || true
 fi
