@@ -1,0 +1,31 @@
+[Unit]
+Description=Broadcast Box
+Documentation=https://github.com/glimesh/broadcast-box
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=broadcast-box
+Group=broadcast-box
+WorkingDirectory=/var/lib/broadcast-box
+Environment=APP_ENV=production
+Environment=FRONTEND_PATH=/usr/lib/broadcast-box/web/build
+EnvironmentFile=/etc/broadcast-box/broadcast-box.env
+EnvironmentFile=-/etc/broadcast-box/nat.env
+# The ICE UDP mux binds one socket per interface address present at startup and
+# never re-enumerates, so starting before the interface has an address leaves
+# the service with no UDP media port. Wait for one first.
+ExecStartPre=/usr/lib/broadcast-box/wait-for-address.sh
+ExecStart=/usr/bin/broadcast-box
+Restart=on-failure
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/broadcast-box /var/log/broadcast-box /etc/broadcast-box
+
+[Install]
+WantedBy=multi-user.target
