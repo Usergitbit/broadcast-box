@@ -19,9 +19,25 @@ install -d -o broadcast-box -g broadcast-box -m 0750 /var/lib/broadcast-box
 install -d -o broadcast-box -g broadcast-box -m 0750 /var/log/broadcast-box
 install -d -o root -g root -m 0755 /etc/broadcast-box
 
-if command -v systemctl >/dev/null 2>&1; then
+if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
 	systemctl daemon-reload || true
 	systemctl enable broadcast-box.service >/dev/null 2>&1 || true
+
+	# $2 is the previously installed version on an upgrade. dpkg does not stop
+	# the service for an upgrade, so the old process is still running from the
+	# replaced binary and must be restarted for the new binary and unit to take
+	# effect. A fresh install only starts it. Action selection mirrors
+	# dh_installsystemd.
+	action=start
+	if [ -n "${2:-}" ]; then
+		action=restart
+	fi
+
+	if command -v deb-systemd-invoke >/dev/null 2>&1; then
+		deb-systemd-invoke "$action" broadcast-box.service >/dev/null 2>&1 || true
+	else
+		systemctl "$action" broadcast-box.service >/dev/null 2>&1 || true
+	fi
 
 	echo
 	echo "NOTE: Automatic NAT IP refresh requires NAT_1_TO_1_HOST to be configured."

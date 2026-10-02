@@ -210,6 +210,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH="$go_arch" \
 echo "==> Assembling Debian filesystem"
 install -Dm0755 "$BUILD_DIR/broadcast-box" "$pkg_root/usr/bin/broadcast-box"
 install -Dm0755 "$REPO_ROOT/packaging/scripts/update-nat-ip.sh" "$pkg_root/usr/lib/broadcast-box/update-nat-ip.sh"
+install -Dm0755 "$REPO_ROOT/packaging/scripts/wait-for-address.sh" "$pkg_root/usr/lib/broadcast-box/wait-for-address.sh"
 
 install -Dm0644 "$REPO_ROOT/packaging/etc/broadcast-box.env" "$pkg_root/etc/broadcast-box/broadcast-box.env"
 install -Dm0644 "$REPO_ROOT/packaging/systemd/broadcast-box.service" "$pkg_root/lib/systemd/system/broadcast-box.service"
